@@ -54,7 +54,7 @@ const Login = () => {
                   />
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold leading-tight" style={{ color: '#991b1b' }}>
-                  FMS Dispatch
+                  Mandi Book
                 </h1>
               </div>
 

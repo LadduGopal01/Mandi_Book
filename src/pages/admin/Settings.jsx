@@ -48,9 +48,9 @@ const Settings = () => {
 
       // If fetch failed or returned no options, and since user provided a specific list,
       // we can merge or default. The user stated:
-      // "store page name like format (Dashboard, Indent, Loading Point, Loading Complete, Gate Pass, Settings)"
+      // "store page name like format (Dashboard, Indent, Settings)"
       // So let's ensure these exist.
-      const defaultOptions = ["Dashboard", "Indent", "Loading Point", "Loading Complete", "Gate Pass", "Settings"];
+      const defaultOptions = ["Dashboard", "TP Summary", "Settings"];
 
       if (options.length === 0) {
         setPageOptions(defaultOptions);
@@ -61,7 +61,7 @@ const Settings = () => {
     } catch (error) {
       console.error("Error fetching page options:", error);
       // Fallback
-      setPageOptions(["Dashboard", "Indent", "Loading Point", "Loading Complete", "Gate Pass", "Settings"]);
+      setPageOptions(["Dashboard", "TP Summary", "Settings"]);
     }
   };
 

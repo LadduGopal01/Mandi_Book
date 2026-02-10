@@ -6,14 +6,7 @@ import {
   Menu,
   X,
   FileText,
-  Truck,
-  CheckSquare,
-  MapPin,
-  Settings,
-  Package,
-  Wheat,
-  Receipt,
-  ClipboardList
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Footer from '../components/Footer';
@@ -138,110 +131,25 @@ const AdminLayout = () => {
                       </Link>
                     )}
 
-                    {hasAccess('Indent') && (
+                    {(hasAccess('Indent') || hasAccess('TP Summary')) && (
                       <Link
-                        to="/admin/indent"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/indent')
+                        to="/admin/tp-summary"
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/tp-summary')
                           ? 'text-white border-r-4'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                           }`}
-                        style={isActive('/admin/indent') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
+                        style={isActive('/admin/tp-summary') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
                         onClick={closeSidebar}
                       >
                         <FileText size={18} className="shrink-0" />
-                        <span className="truncate">Indent</span>
+                        <span className="truncate">TP Summary</span>
                       </Link>
                     )}
 
-                    {hasAccess('Loading Point') && (
-                      <Link
-                        to="/admin/loading-point"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/loading-point')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/loading-point') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <MapPin size={18} className="shrink-0" />
-                        <span className="truncate">Loading Point</span>
-                      </Link>
-                    )}
 
-                    {hasAccess('Loading Complete') && (
-                      <Link
-                        to="/admin/loading-complete"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/loading-complete')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/loading-complete') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <CheckSquare size={18} className="shrink-0" />
-                        <span className="truncate">Loading Complete</span>
-                      </Link>
-                    )}
 
-                    {hasAccess('Gate Pass') && (
-                      <Link
-                        to="/admin/state-pass"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/state-pass')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/state-pass') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <Truck size={18} className="shrink-0" />
-                        <span className="truncate">Gate Pass</span>
-                      </Link>
-                    )}
 
-                    {hasAccess('Unloading Point') && (
-                      <Link
-                        to="/admin/unloading-point"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/unloading-point')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/unloading-point') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <Package size={18} className="shrink-0" />
-                        <span className="truncate">Unloading Point</span>
-                      </Link>
-                    )}
 
-                    {hasAccess('Paddy Slip') && (
-                      <Link
-                        to="/admin/paddy-slip"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/paddy-slip')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/paddy-slip') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <Wheat size={18} className="shrink-0" />
-                        <span className="truncate">Paddy Slip</span>
-                      </Link>
-                    )}
-
-                    {hasAccess('Kantaparchi') && (
-                      <Link
-                        to="/admin/kantaparchi"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/kantaparchi')
-                          ? 'text-white border-r-4'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                          }`}
-                        style={isActive('/admin/kantaparchi') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
-                        onClick={closeSidebar}
-                      >
-                        <Receipt size={18} className="shrink-0" />
-                        <span className="truncate">Kantaparchi</span>
-                      </Link>
-                    )}
 
                     {hasAccess('Settings') && (
                       <Link
