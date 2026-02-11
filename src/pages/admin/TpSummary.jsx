@@ -610,72 +610,139 @@ const TpSummaryPage = () => {
       fetchSheetData(SHEET_45).catch(() => []),
       fetchSheetData(TP_NOT_RECEIVE_SHEET).catch(() => []),
     ]);
-    // Update destinations - add to Tagged In (col X=24 in Sheet42, col AA=27 in TpNotReceive)
+
+    // 1. UPDATE DESTINATIONS
     for (const m of taggedMappings) {
-      let found = false;
+      const targetTpNo = m.targetTpNo.toString().trim();
+      const targetPacsName = m.targetPacsName.toString().trim();
+      const quantity = m.quantity;
+      let matched = false;
+
+      // Check Sheet42 (Col X=24 for Tagged In, Col AD=30 for Historry)
       for (let i = 1; i < s42.length; i++) {
-        if ((s42[i][1] || '').toString().trim() === m.targetTpNo && (s42[i][3] || '').toString().trim() === m.targetPacsName) {
+        if ((s42[i][1] || '').toString().trim() === targetTpNo && (s42[i][3] || '').toString().trim() === targetPacsName) {
           const cur = parseFloat(s42[i][23]) || 0;
-          await updateCell(SHEET_42, i + 1, 24, cur + m.quantity);
-          // Update Tagged IN History (col AD=30)
+          await updateCell(SHEET_42, i + 1, 24, cur + quantity);
+
+          // Update Tagged IN History (AD=30)
           const hist = (s42[i][29] || '').toString().trim();
-          const entry = `From Slip ${sourceSlipNo}: ${formatQty(m.quantity)}`;
+          const entry = `From Slip ${sourceSlipNo}: ${formatQty(quantity)}`;
           await updateCell(SHEET_42, i + 1, 30, hist ? hist + ' | ' + entry : entry);
-          found = true; break;
+          matched = true;
+          break;
         }
       }
-      if (!found) {
+
+      // If not in 42, check TpNotReceive (Col AA=27 for Tagged In)
+      if (!matched) {
         for (let i = 1; i < tnr.length; i++) {
-          if ((tnr[i][4] || '').toString().trim() === m.targetTpNo && (tnr[i][15] || '').toString().trim() === m.targetPacsName) {
+          const rowTp = (tnr[i][4] || '').toString().trim();
+          const rowPacs = (tnr[i][15] || '').toString().trim();
+          if (rowTp === targetTpNo && rowPacs === targetPacsName) {
             const cur = parseFloat(tnr[i][26]) || 0;
-            await updateCell(TP_NOT_RECEIVE_SHEET, i + 1, 27, cur + m.quantity);
-            found = true; break;
+            await updateCell(TP_NOT_RECEIVE_SHEET, i + 1, 27, cur + quantity);
+            matched = true;
+            break;
           }
         }
       }
+
+      // Check Sheet45 as destination (Col AE=31 for History) - logic from script
+      for (let i = 1; i < s45.length; i++) {
+        const rowTp = (s45[i][10] || '').toString().trim();
+        const rowPacs = (s45[i][4] || '').toString().trim();
+        if (rowTp === targetTpNo && rowPacs === targetPacsName) {
+          const hist = (s45[i][30] || '').toString().trim(); // AE is index 30
+          const entry = `From Slip ${sourceSlipNo}: ${formatQty(quantity)}`;
+          await updateCell(SHEET_45, i + 1, 31, hist ? hist + ' | ' + entry : entry);
+          break;
+        }
+      }
     }
-    // Build history string
+
+    // 2. UPDATE SOURCE
     const historyEntries = taggedMappings.map(m =>
       `Slip → TP: ${m.targetTpNo} (${m.targetPacsName}) → Qty: ${formatQty(m.quantity)}`
     );
-    const newHistory = historyEntries.join(' | ');
-    // Update source
+    const newHistoryString = historyEntries.join(' | ');
+
     if (sourceSheet === 'TpNotReceive') {
+      let tnrRowIndex = -1;
+      // Update Tnr Source Row (Col AB=28 TaggedOut, AC=29 History)
       for (let i = 1; i < tnr.length; i++) {
         if ((tnr[i][14] || '').toString().trim() === sourceSlipNo) {
-          const cur = parseFloat(tnr[i][27]) || 0;
+          tnrRowIndex = i;
+          const cur = parseFloat(tnr[i][27]) || 0; // Col AB is index 27
           await updateCell(TP_NOT_RECEIVE_SHEET, i + 1, 28, cur + totalTagged);
-          const ex = (tnr[i][28] || '').toString().trim();
-          await updateCell(TP_NOT_RECEIVE_SHEET, i + 1, 29, ex ? ex + ' | ' + newHistory : newHistory);
+
+          const ex = (tnr[i][28] || '').toString().trim(); // Col AC is index 28 (WAIT: AB=28th col=idx27. AC=29th col=idx28)
+          await updateCell(TP_NOT_RECEIVE_SHEET, i + 1, 29, ex ? ex + ' | ' + newHistoryString : newHistoryString);
           break;
         }
       }
-      // Also update Sheet42 col X
-      for (let i = 1; i < s42.length; i++) {
-        if ((s42[i][0] || '').toString().trim() === sourceSlipNo) {
-          const cur = parseFloat(s42[i][23]) || 0;
-          await updateCell(SHEET_42, i + 1, 24, cur + totalTagged);
-          break;
+      // Also update Sheet42 col X (Tagged Remaining/In sync?) - from script logic
+      if (tnrRowIndex !== -1) {
+        for (let i = 1; i < s42.length; i++) {
+          if ((s42[i][0] || '').toString().trim() === sourceSlipNo) {
+            const curX = parseFloat(s42[i][23]) || 0; // Col X is index 23
+            await updateCell(SHEET_42, i + 1, 24, curX + totalTagged);
+            break;
+          }
         }
       }
     } else if (sourceSheet === 'Sheet42') {
+      // Update S42 Col Y=25 (Tagged Out), AC=29 (History)
       for (let i = 1; i < s42.length; i++) {
         if ((s42[i][0] || '').toString().trim() === sourceSlipNo) {
-          const cur = parseFloat(s42[i][24]) || 0;
-          await updateCell(SHEET_42, i + 1, 25, cur + totalTagged);
-          const ex = (s42[i][28] || '').toString().trim();
-          await updateCell(SHEET_42, i + 1, 29, ex ? ex + ' | ' + newHistory : newHistory);
+          const curY = parseFloat(s42[i][24]) || 0; // Col Y is index 24
+          await updateCell(SHEET_42, i + 1, 25, curY + totalTagged);
+
+          const ex = (s42[i][28] || '').toString().trim(); // Col AC is index 28
+          await updateCell(SHEET_42, i + 1, 29, ex ? ex + ' | ' + newHistoryString : newHistoryString);
           break;
         }
       }
     } else if (sourceSheet === 'Sheet45') {
+      // Update S45 Col AC=29 (Tagged Out), AD=30 (History)
+      let sourceTpNo = '', sourcePacsName = '';
       for (let i = 1; i < s45.length; i++) {
-        if ((s45[i][1] || '').toString().trim() === sourceSlipNo) {
-          const cur = parseFloat(s45[i][28]) || 0;
-          await updateCell(SHEET_45, i + 1, 29, cur + totalTagged);
-          const ex = (s45[i][29] || '').toString().trim();
-          await updateCell(SHEET_45, i + 1, 30, ex ? ex + ' | ' + newHistory : newHistory);
+        const rowSlip = (s45[i][1] || '').toString().trim();
+        if (rowSlip === sourceSlipNo) {
+          sourceTpNo = (s45[i][10] || '').toString().trim();
+          sourcePacsName = (s45[i][4] || '').toString().trim();
+
+          const curAC = parseFloat(s45[i][28]) || 0; // Col AC is index 28
+          const newAC = curAC + totalTagged;
+          await updateCell(SHEET_45, i + 1, 29, newAC);
+
+          const ex = (s45[i][29] || '').toString().trim(); // Col AD is index 29
+          await updateCell(SHEET_45, i + 1, 30, ex ? ex + ' | ' + newHistoryString : newHistoryString);
+
+          // Update local data clone for summation logic below
+          s45[i][28] = newAC;
           break;
+        }
+      }
+
+      // SYNC SUM to Sheet42 (Col Y)
+      if (sourceTpNo && sourcePacsName) {
+        let sumFromSheet45 = 0;
+        // Re-iterate S45 (using updated local values)
+        for (let i = 1; i < s45.length; i++) {
+          const rTp = (s45[i][10] || '').toString().trim();
+          const rPacs = (s45[i][4] || '').toString().trim();
+          if (rTp === sourceTpNo && rPacs === sourcePacsName) {
+            sumFromSheet45 += (parseFloat(s45[i][28]) || 0);
+          }
+        }
+        // Update Sheet42 Col Y for this TP/PACS (Not Slip!) - Wait, script finds row by TP/PACS in S42
+        for (let i = 1; i < s42.length; i++) {
+          const rTp = (s42[i][1] || '').toString().trim();
+          const rPacs = (s42[i][3] || '').toString().trim();
+          if (rTp === sourceTpNo && rPacs === sourcePacsName) {
+            await updateCell(SHEET_42, i + 1, 25, sumFromSheet45);
+            break;
+          }
         }
       }
     }
@@ -782,7 +849,7 @@ const TpSummaryPage = () => {
                 </div>
 
                 {/* Summary Filter Bar */}
-                <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200 flex items-center gap-3 overflow-x-auto">
+                <div className="flex-shrink-0 px-4 py-2 bg-white border-b border-gray-200 flex flex-wrap items-center gap-3 relative z-40">
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex-shrink-0">Filters:</span>
                   {SUMMARY_FILTER_DEFS.map(def => {
                     const active = summaryFilterSelections[def.key].length > 0;
@@ -1014,7 +1081,7 @@ const TpSummaryPage = () => {
                         <th className="p-3 border-b border-gray-200">TP No</th>
                         <th className="p-3 border-b border-gray-200">PACS Name</th>
                         <th className="p-3 border-b border-gray-200">Vehicle No</th>
-                        <th className="p-3 border-b border-gray-200">Original Source</th>
+                        <th className="p-3 border-b border-gray-200">Tagged OUT History</th>
                         <th className="p-3 border-b border-gray-200 w-24 text-center">Action</th>
                       </tr>
                     </thead>
@@ -1027,7 +1094,7 @@ const TpSummaryPage = () => {
                           <td className="p-3">{row.tpNo}</td>
                           <td className="p-3">{row.pacsName}</td>
                           <td className="p-3">{row.vehicleNo}</td>
-                          <td className="p-3 text-xs text-gray-500">{row.source}</td>
+                          <td className="p-3 text-xs text-gray-500 max-w-[200px] break-words">{row.taggedRemainingHistory || '-'}</td>
                           <td className="p-3 text-center">
                             <button
                               onClick={() => openRemainingTagModal(row)}
@@ -1116,21 +1183,15 @@ const TpSummaryPage = () => {
                       )}
                     </div>
 
-                    {/* Mappings */}
+                    {/* Destination Inputs */}
                     {(tagCurrentItem || !isSummaryTagMode) && (
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-end">
-                          <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wide flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
-                            {isSummaryTagMode ? 'Quantity to Tag' : 'Destination Mappings'}
+                      <div className="mt-6">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                          <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+                            {isSummaryTagMode ? 'Quantity to Tag' : 'Destination Details'}
                           </h4>
-                          {!isSummaryTagMode && (
-                            <button onClick={addTagMapping} className="text-xs flex items-center gap-1 bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition-colors font-medium">
-                              <Plus className="w-3 h-3" /> Add Destination
-                            </button>
-                          )}
                         </div>
-
                         {isSummaryTagMode ? (
                           <div className="bg-white p-5 rounded-lg border border-gray-200 shadow-sm flex items-center gap-4">
                             <div className="flex-1">
@@ -1154,7 +1215,6 @@ const TpSummaryPage = () => {
                           <div className="space-y-3">
                             {tagMappings.map((map, idx) => (
                               <div key={map.id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm relative group hover:border-indigo-300 transition-all">
-                                <span className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-100 group-hover:bg-indigo-500 transition-colors rounded-l-lg"></span>
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                                   <div className="md:col-span-3">
                                     <label className="block text-xs font-medium text-gray-500 mb-1">Target TP No</label>
@@ -1167,7 +1227,7 @@ const TpSummaryPage = () => {
                                       placeholder="Ex: 51234"
                                     />
                                   </div>
-                                  <div className="md:col-span-5">
+                                  <div className="md:col-span-6">
                                     <label className="block text-xs font-medium text-gray-500 mb-1">Target PACS Name</label>
                                     {tagPacsOptions[map.id] && tagPacsOptions[map.id].length > 0 ? (
                                       <select
@@ -1188,7 +1248,7 @@ const TpSummaryPage = () => {
                                       />
                                     )}
                                   </div>
-                                  <div className="md:col-span-3">
+                                  <div className="md:col-span-2">
                                     <label className="block text-xs font-medium text-gray-500 mb-1">Quantity</label>
                                     <input
                                       type="number"
@@ -1203,6 +1263,7 @@ const TpSummaryPage = () => {
                                       onClick={() => removeTagMapping(map.id)}
                                       className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
                                       disabled={tagMappings.length === 1}
+                                      title="Remove"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -1210,10 +1271,17 @@ const TpSummaryPage = () => {
                                 </div>
                               </div>
                             ))}
+                            <button
+                              onClick={addTagMapping}
+                              className="mt-2 text-sm flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors font-medium w-full justify-center border border-indigo-200 border-dashed"
+                            >
+                              <Plus className="w-4 h-4" /> Add Another Mapping
+                            </button>
                           </div>
                         )}
                       </div>
                     )}
+
                   </div>
 
                   {/* Footer Stats & Actions */}
