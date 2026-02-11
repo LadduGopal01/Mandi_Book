@@ -118,12 +118,12 @@ const AdminLayout = () => {
                   <>
                     {hasAccess('Dashboard') && (
                       <Link
-                        to="/admin/dashboard"
-                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive('/admin/dashboard')
+                        to={location.pathname.startsWith('/user') ? '/user/dashboard' : '/admin/dashboard'}
+                        className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${isActive(location.pathname.startsWith('/user') ? '/user/dashboard' : '/admin/dashboard')
                           ? 'text-white border-r-4'
                           : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                           }`}
-                        style={isActive('/admin/dashboard') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
+                        style={isActive(location.pathname.startsWith('/user') ? '/user/dashboard' : '/admin/dashboard') ? { backgroundColor: '#991b1b', borderRightColor: '#991b1b' } : {}}
                         onClick={closeSidebar}
                       >
                         <LayoutDashboard size={18} className="shrink-0" />

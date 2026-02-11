@@ -18,7 +18,7 @@ function App() {
       {/* LOGIN */}
       <Route
         path="/login"
-        element={user ? <Navigate to={user.role === "admin" ? "/admin/dashboard" : "/user/dashboard"} /> : <Login />}
+        element={user ? <Navigate to={user.role?.toLowerCase() === "admin" ? "/admin/dashboard" : "/user/dashboard"} /> : <Login />}
       />
 
       {/* ADMIN ROUTES */}
@@ -42,7 +42,7 @@ function App() {
         path="/"
         element={
           user
-            ? <Navigate to={user.role === "admin" ? "/admin/dashboard" : "/user/dashboard"} />
+            ? <Navigate to={user.role?.toLowerCase() === "admin" ? "/admin/dashboard" : "/user/dashboard"} />
             : <Navigate to="/login" />
         }
       />
